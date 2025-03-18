@@ -1,5 +1,3 @@
-package org.example;
-
 import java.util.Scanner;
 
 public class Main {
@@ -10,8 +8,8 @@ public class Main {
 
         do {
             System.out.println("\n1. Multiplication");
-            System.out.println("2. Line Multiplication (Not Implemented)");
-            System.out.println("3. Block Multiplication (Not Implemented)");
+            System.out.println("2. Line Multiplication");
+            System.out.println("0. Quit");
             System.out.print("Selection?: ");
             choice = scanner.nextInt();
 
@@ -27,10 +25,7 @@ public class Main {
                     matrixMultiplication.onMult(size);
                     break;
                 case 2:
-                    System.out.println("Line Multiplication is not implemented.");
-                    break;
-                case 3:
-                    System.out.println("Block Multiplication is not implemented.");
+                    matrixMultiplication.onMultLine(size);
                     break;
                 default:
                     System.out.println("Invalid choice.");
