@@ -26,6 +26,7 @@ public class Main {
                     break;
                 case 2:
                     matrixMultiplication.onMultLine(size);
+                    break;
                 default:
                     System.out.println("Invalid choice.");
                     break;
