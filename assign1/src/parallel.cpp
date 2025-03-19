@@ -32,18 +32,21 @@ void OnMultLine(int m_ar, int m_br)
         for(j=0; j<m_br; j++)
             phb[i*m_br + j] = (double)(i+1);
 
+    for(i=0; i<m_br; i++)
+        for(j=0; j<m_br; j++)
+            phc[i*m_br + j] = (double)(0);
+
     Time1 = clock();
 
     #pragma omp parallel for
     for(i=0; i<m_ar; i++)
     {
 		for( k=0; k<m_ar; k++ )
-        {	temp = 0;
+        {
 			for( j=0; j<m_br; j++)
             {    
-                temp += pha[i*m_ar+k] * phb[k*m_br+j];
+            	phc[i*m_ar+j] += pha[i*m_ar+k] * phb[k*m_br+j];
             }
-			phc[i*m_ar+j]=temp;
         }
     }
 
@@ -86,6 +89,10 @@ void OnMultLine2(int m_ar, int m_br)
     for(i=0; i<m_br; i++)
         for(j=0; j<m_br; j++)
             phb[i*m_br + j] = (double)(i+1);
+        
+    for(i=0; i<m_br; i++)
+        for(j=0; j<m_br; j++)
+            phc[i*m_br + j] = (double)(0);
 
     Time1 = clock();
 
@@ -93,13 +100,12 @@ void OnMultLine2(int m_ar, int m_br)
     for(i=0; i<m_ar; i++)
     {
 		for( k=0; k<m_ar; k++ )
-        {	temp = 0;
-            #pragma omp for
+        {
+            #pragma omp parallel for
 			for( j=0; j<m_br; j++)
             {    
-                temp += pha[i*m_ar+k] * phb[k*m_br+j];
+            	phc[i*m_ar+j] += pha[i*m_ar+k] * phb[k*m_br+j];
             }
-			phc[i*m_ar+j]=temp;
         }
     }
 
