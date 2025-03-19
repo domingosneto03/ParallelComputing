@@ -4,15 +4,16 @@
 #include <time.h>
 #include <cstdlib>
 #include <papi.h>
+#include <omp.h>
 
 using namespace std;
 
-#define SYSTEMTIME clock_t
+#define  clock_t
 
 
 void OnMultLine(int m_ar, int m_br)
 {
-	SYSTEMTIME Time1, Time2;
+	double Time1, Time2;
     
     char st[100];
 	double temp;
@@ -36,7 +37,7 @@ void OnMultLine(int m_ar, int m_br)
         for(j=0; j<m_br; j++)
             phc[i*m_br + j] = (double)(0);
 
-    Time1 = clock();
+    Time1 = omp_get_wtime();
 
     #pragma omp parallel for
     for(i=0; i<m_ar; i++)
@@ -50,8 +51,8 @@ void OnMultLine(int m_ar, int m_br)
         }
     }
 
-    Time2 = clock();
-    sprintf(st, "Time: %3.3f seconds\n", (double)(Time2 - Time1) / CLOCKS_PER_SEC);
+    Time2 = omp_get_wtime();
+    sprintf(st, "Time: %3.3f seconds\n", (Time2 - Time1) );
     cout << st;
 
     // display 10 elements of the result matrix to verify correctness
@@ -70,7 +71,7 @@ void OnMultLine(int m_ar, int m_br)
 
 void OnMultLine2(int m_ar, int m_br)
 {
-	SYSTEMTIME Time1, Time2;
+	double Time1, Time2;
     
     char st[100];
 	double temp;
@@ -94,7 +95,7 @@ void OnMultLine2(int m_ar, int m_br)
         for(j=0; j<m_br; j++)
             phc[i*m_br + j] = (double)(0);
 
-    Time1 = clock();
+    Time1 = omp_get_wtime();
 
     #pragma omp parallel
     for(i=0; i<m_ar; i++)
@@ -109,8 +110,8 @@ void OnMultLine2(int m_ar, int m_br)
         }
     }
 
-    Time2 = clock();
-    sprintf(st, "Time: %3.3f seconds\n", (double)(Time2 - Time1) / CLOCKS_PER_SEC);
+    Time2 = omp_get_wtime();
+    sprintf(st, "Time: %3.3f seconds\n", Time2 - Time1);
     cout << st;
 
     // display 10 elements of the result matrix to verify correctness
