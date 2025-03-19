@@ -46,13 +46,18 @@ public class MatrixMultiplication {
             }
         }
 
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                c[i][j] = 0.0;
+            }
+        }
+
         long startTime = System.nanoTime();
 
         for (int i = 0; i < size; i++) {
             for (int k = 0; k < size; k++) {
-                double temp = a[i][k];
                 for (int j = 0; j < size; j++) {
-                    c[i][j] += temp * b[k][j];
+                    c[i][j] += a[i][k] * b[k][j];
                 }
             }
         }
