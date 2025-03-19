@@ -95,17 +95,21 @@ void OnMultLine(int m_ar, int m_br)
         for(j=0; j<m_br; j++)
             phb[i*m_br + j] = (double)(i+1);
 
+    for(i=0; i<m_br; i++)
+        for(j=0; j<m_br; j++)
+            phc[i*m_br + j] = (double)(0);
+	
+
     Time1 = clock();
 
     for(i=0; i<m_ar; i++)
     {
 		for( k=0; k<m_ar; k++ )
-        {	temp = 0;
+        {
 			for( j=0; j<m_br; j++)
             {    
-                temp += pha[i*m_ar+k] * phb[k*m_br+j];
+            	phc[i*m_ar+j] += pha[i*m_ar+k] * phb[k*m_br+j];
             }
-			phc[i*m_ar+j]=temp;
         }
     }
 
@@ -150,20 +154,22 @@ void OnMultBlock(int m_ar, int m_br, int bkSize)
         for(j=0; j<m_br; j++)
             phb[i*m_br + j] = (double)(i+1);
 
+	for(i=0; i<m_br; i++)
+        for(j=0; j<m_br; j++)
+            phc[i*m_br + j] = (double)(0);
+
     Time1 = clock();
 
     for (ii = 0; ii < m_ar; ii += bkSize) {
-        for (jj = 0; jj < m_br; jj += bkSize) {
-            for (kk = 0; kk < m_ar; kk += bkSize) {
+        for (kk = 0; kk < m_br; kk += bkSize) {
+            for (jj = 0; jj < m_ar; jj += bkSize) {
                 // Multiply blocks
                 for (i = ii; i < min(ii + bkSize, m_ar); i++) {
-                    for (j = jj; j < min(jj + bkSize, m_br); j++) {
-                        double temp = 0.0;
-                        for (k = kk; k < min(kk + bkSize, m_ar); k++) {
-                            temp += pha[i * m_ar + k] * phb[k * m_br + j];
-                        }
-                        phc[i * m_ar + j] += temp;
-                    }
+                    for (k = kk; k < min(kk + bkSize, m_br); k++) {
+                        for (j = jj; j < min(jj + bkSize, m_ar); j++) {
+                            phc[i * m_ar + j] += pha[i * m_ar + k] * phb[k * m_br + j];
+                        }                    
+					}
                 }
             }
         }
