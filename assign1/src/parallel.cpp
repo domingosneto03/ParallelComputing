@@ -53,6 +53,7 @@ void OnMultLine(int m_ar, int m_br)
 
     Time2 = omp_get_wtime();
     sprintf(st, "Time: %3.3f seconds\n", (Time2 - Time1) );
+    cout << "Number of Threads: " << omp_get_max_threads() << endl;
     cout << st;
 
     // display 10 elements of the result matrix to verify correctness
@@ -112,6 +113,7 @@ void OnMultLine2(int m_ar, int m_br)
 
     Time2 = omp_get_wtime();
     sprintf(st, "Time: %3.3f seconds\n", Time2 - Time1);
+    cout << "Number of Threads: " << omp_get_max_threads() << endl;
     cout << st;
 
     // display 10 elements of the result matrix to verify correctness
