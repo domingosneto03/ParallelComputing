@@ -4,7 +4,6 @@ CPD Projects of group T14G12.
 
 Group members:
 
-1. &lt;first name&gt; &lt;family name&gt; (&lt;email address&gt;)
+1. Domingos Neto (up202108728@up.pt)
 2. Eduardo Baltazar (up202206313@up.pt)
-3. &lt;first name&gt; &lt;family name&gt; (&lt;email address&gt;)
-4. &lt;first name&gt; &lt;family name&gt; (&lt;email address&gt;)
+3. Joana Noites (up202206284@up.pt)
