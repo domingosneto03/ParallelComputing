@@ -24,7 +24,7 @@ public class Server {
             while (isRunning) {
                 Socket clientSocket = serverSocket.accept();
                 // Create a new virtual thread for each client
-                new Thread(() -> handleClient(clientSocket)).start();
+                Thread.startVirtualThread(() -> handleClient(clientSocket));
             }
         } catch (IOException e) {
             System.err.println("Server error: " + e.getMessage());
