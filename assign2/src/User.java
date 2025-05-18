@@ -4,6 +4,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.locks.*;
 
+
+// helper singleton which takes care of all things user account related
 public class User implements Serializable{
     private static final long serialVersionUID = 1L;
     private final String username;
@@ -105,14 +107,11 @@ public class User implements Serializable{
         }
     }
     
-    public static void saveUserData() {
-        usersLock.readLock().lock();
+    private static void saveUserData() {
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(USER_DATA_FILE))) {
             oos.writeObject(users);
         } catch (IOException e) {
             System.err.println("Error saving user data: " + e.getMessage());
-        } finally {
-            usersLock.readLock().unlock();
         }
     }
 }
