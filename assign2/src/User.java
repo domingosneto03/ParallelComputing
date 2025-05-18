@@ -4,7 +4,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.locks.*;
 
-public class User {
+public class User implements Serializable{
+    private static final long serialVersionUID = 1L;
     private final String username;
     private final String passwordHash;
     private final String salt;

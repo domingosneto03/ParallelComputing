@@ -1,11 +1,18 @@
 import java.net.*;
 import java.io.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class Server {
     private final int port;
     private ServerSocket serverSocket;
     private boolean isRunning;
-    
+    private static final Map<String, Room> rooms = new HashMap<>();
+    private static final ReentrantLock roomsLock = new ReentrantLock();
+
     public Server(int port) {
         this.port = port;
         this.isRunning = false;
@@ -84,6 +91,29 @@ public class Server {
             if (authenticated) {
                 out.println("AUTHENTICATED Welcome, " + username + "!");
                 // Room selection and chat functionality would go here
+                Room currentRoom = null;
+                out.println("Available rooms: " + getRoomNames());
+                out.println("Use: CREATE <room> or JOIN <room> to enter a room.");
+
+                String input;
+                while ((input = in.readLine()) != null) {
+                    if (input.toUpperCase().startsWith("CREATE ")) {
+                        String roomName = input.substring(7).trim();
+                        currentRoom = getOrCreateRoom(roomName);
+                        currentRoom.addClient(out);
+                        out.println("Created and joined room: " + roomName);
+                    } else if (input.toUpperCase().startsWith("JOIN ")) {
+                        String roomName = input.substring(5).trim();
+                        currentRoom = getOrCreateRoom(roomName);
+                        currentRoom.addClient(out);
+                        out.println("Joined room: " + roomName);
+                    } else if (currentRoom != null) {
+                        currentRoom.broadcast(username + ": " + input);
+                    } else {
+                        out.println("ERROR Unknown command. Use CREATE or JOIN first.");
+                    }
+                }
+
             }
             
         } catch (IOException e) {
@@ -99,7 +129,26 @@ public class Server {
             System.err.println("Error stopping server: " + e.getMessage());
         }
     }
-    
+
+    public static List<String> getRoomNames() {
+        roomsLock.lock();
+        try {
+            return new ArrayList<>(rooms.keySet());
+        } finally {
+            roomsLock.unlock();
+        }
+    }
+
+    public static Room getOrCreateRoom(String name) {
+        roomsLock.lock();
+        try {
+            return rooms.computeIfAbsent(name, Room::new);
+        } finally {
+            roomsLock.unlock();
+        }
+    }
+
+
     public static void main(String[] args) {
         int port = args.length > 0 ? Integer.parseInt(args[0]) : 12345;
         Server server = new Server(port);

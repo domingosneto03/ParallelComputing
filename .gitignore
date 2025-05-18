@@ -1,0 +1,17 @@
+# === IntelliJ IDEA ===
+.idea/
+*.iml
+
+# === Build output ===
+/out/
+/target/
+/bin/
+/build/
+
+# === OS junk ===
+.DS_Store
+Thumbs.db
+
+# === Runtime-generated files ===
+users.dat
+*.log
