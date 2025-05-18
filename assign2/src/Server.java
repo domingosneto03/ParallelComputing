@@ -108,7 +108,11 @@ public class Server {
                         currentRoom.addClient(out);
                         out.println("Joined room: " + roomName);
                     } else if (currentRoom != null) {
-                        currentRoom.broadcast(username + ": " + input);
+                        var message = input;
+                        if (input.startsWith("^[")) {
+                            message = input.substring(2);
+                        }
+                        currentRoom.broadcast(username + ": " + message);
                     } else {
                         out.println("ERROR Unknown command. Use CREATE or JOIN first.");
                     }
