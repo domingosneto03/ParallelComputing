@@ -1,3 +1,6 @@
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLServerSocketFactory;
+import javax.net.ssl.SSLSocket;
 import java.net.*;
 import java.io.*;
 import java.util.ArrayList;
@@ -8,10 +11,13 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class Server {
     private final int port;
-    private ServerSocket serverSocket;
+    private SSLServerSocket serverSocket;
     private boolean isRunning;
     private static final Map<String, Room> rooms = new HashMap<>();
     private static final ReentrantLock roomsLock = new ReentrantLock();
+
+    private static final String KEYSTORE_PATH = "certs/server_keystore.jks";
+    private static final String KEYSTORE_PASSWORD = "cpd_g12";
 
     public Server(int port) {
         this.port = port;
@@ -21,19 +27,26 @@ public class Server {
     
     public void start() {
         isRunning = true;
-        try (ServerSocket serverSocket = new ServerSocket(port)) {
-            System.out.println("Server started on port " + port);
-            
-            while (isRunning) {
-                Socket clientSocket = serverSocket.accept();
-                Thread.startVirtualThread(() -> handleClient(clientSocket));
+        try {
+            System.setProperty("javax.net.ssl.keyStore", KEYSTORE_PATH);
+            System.setProperty("javax.net.ssl.keyStorePassword", KEYSTORE_PASSWORD);
+
+            SSLServerSocketFactory sslFactory = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
+
+            try (SSLServerSocket serverSocket = (SSLServerSocket) sslFactory.createServerSocket(port)) {
+                System.out.println("Server started on port " + port);
+
+                while (isRunning) {
+                    SSLSocket clientSocket = (SSLSocket) serverSocket.accept();
+                    Thread.startVirtualThread(() -> handleClient(clientSocket));
+                }
             }
         } catch (IOException e) {
             System.err.println("Server error: " + e.getMessage());
         }
     }
     
-    private void handleClient(Socket clientSocket) {
+    private void handleClient(SSLSocket clientSocket) {
         try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
              PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)) {
             
