@@ -103,10 +103,10 @@ public class Server {
             
             if (authenticated) {
                 out.println("AUTHENTICATED Welcome, " + username + "!");
-                // Room selection and chat functionality would go here
+                
                 Room currentRoom = null;
                 out.println("Available rooms: " + getRoomNames());
-                out.println("Use: CREATE <room> or JOIN <room> to enter a room.");
+                out.println("Use: CREATE <room>, CREATE_AI <room> or JOIN <room> to enter a room.");
 
                 String input;
                 while ((input = in.readLine()) != null) {
@@ -115,6 +115,19 @@ public class Server {
                         currentRoom = getOrCreateRoom(roomName);
                         currentRoom.addClient(out);
                         out.println("Created and joined room: " + roomName);
+
+                    } else if (input.toUpperCase().startsWith("CREATE_AI ")) {
+                        String roomName = input.substring(10).trim();
+                        currentRoom = new AIRoom(roomName, new OllamaClient("localhost", 11434));
+                        currentRoom.addClient(out);
+                        roomsLock.lock();
+                        try {
+                            rooms.put(roomName, currentRoom);
+                        } finally {
+                            roomsLock.unlock();
+                        }
+                        out.println("Created and joined AI room: " + roomName);
+
                     } else if (input.toUpperCase().startsWith("JOIN ")) {
                         String roomName = input.substring(5).trim();
                         currentRoom = getOrCreateRoom(roomName);
@@ -127,7 +140,7 @@ public class Server {
                         }
                         currentRoom.broadcast(username + ": " + message);
                     } else {
-                        out.println("ERROR Unknown command. Use CREATE or JOIN first.");
+                        out.println("ERROR Unknown command. Use CREATE, CREATE_AI or JOIN first.");
                     }
                 }
 
