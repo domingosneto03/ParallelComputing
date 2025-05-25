@@ -8,6 +8,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
+import java.time.Instant;
+import java.time.Duration;
+import java.util.UUID;
 
 public class Server {
     private final int port;
@@ -51,7 +54,7 @@ public class Server {
              PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)) {
             
             out.println("Welcome to the chat server!");
-            out.println("Commands: REGISTER, LOGIN, QUIT");
+            out.println("Commands: REGISTER, RECONNECT, LOGIN, QUIT");
             
             boolean authenticated = false;
             String username = null;
@@ -79,6 +82,22 @@ public class Server {
                             out.println("ERROR Username already exists");
                         }
                         break;
+
+                    case "RECONNECT":
+                        if (parts.length < 2) {
+                            out.println("ERROR Usage: RECONNECT <token>");
+                            break;
+                        }
+                        String token = parts[1];
+                        User user = User.getUserByToken(token);
+                        if (user != null && user.isTokenValid(token)) {
+                            username = user.getUsername();
+                            out.println("SUCCESS Reconnected as " + username);
+                            authenticated = true;
+                        } else {
+                            out.println("ERROR Invalid or expired token");
+                        }
+                        break;
                         
                     case "LOGIN":
                         if (parts.length < 3) {
@@ -88,7 +107,12 @@ public class Server {
                         username = parts[1];
                         password = parts[2];
                         if (User.authenticate(username, password)) {
+                            token = UUID.randomUUID().toString();
+                            user = User.getUser(username);
+                            user.setAuthToken(token);
+                            user.setTokenExpiry(Instant.now().plus(Duration.ofMinutes(30)));
                             out.println("SUCCESS Authentication successful");
+                            out.println("TOKEN " + token);
                             authenticated = true;
                         } else {
                             out.println("ERROR Invalid credentials");
