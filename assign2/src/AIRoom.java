@@ -23,10 +23,12 @@ public class AIRoom extends Room {
             if (message.contains("!ai ")) {
                 String prompt = message.substring(message.indexOf("!ai ") + 4);
                 StringBuilder context = new StringBuilder();
+                context.append("[Conversation context]:");
                 for (String msg : conversation) {
+                    if (msg.contains("!ai ")) {continue;} // remove ai call from context
                     context.append(msg).append("\n");
                 }
-                context.append("\n[Prompt]: ").append(prompt);
+                context.append("\n[Prompt you should answer to]: ").append(prompt);
                 String aiResponse = ollama.getCompletion(context.toString());
                 String botMsg = "Bot: " + aiResponse;
                 conversation.add(botMsg);

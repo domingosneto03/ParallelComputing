@@ -19,29 +19,41 @@ public class OllamaClient {
             conn.setDoOutput(true);
             conn.setRequestProperty("Content-Type", "application/json");
 
-            String json = "{\"model\":\"llama3\",\"prompt\":\"" + prompt.replace("\"", "\\\"") + "\"}";
+            String json = "{\"model\":\"gemma3\",\"prompt\":\"" +
+                    prompt.replace("\"", "\\\"").replace("\n", "\\n") + "\"}";
+
+            System.out.println("Sending JSON: " + json);
+
             try (OutputStream os = conn.getOutputStream()) {
                 os.write(json.getBytes(StandardCharsets.UTF_8));
             }
 
-            StringBuilder response = new StringBuilder();
+            int responseCode = conn.getResponseCode();
+            System.out.println("Response Code: " + responseCode);
+
+            if (responseCode != 200) {
+                return "[Bot error: HTTP " + responseCode + "]";
+            }
+
+            // parse streaming responses
+            StringBuilder botResponse = new StringBuilder();
             try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
                 String line;
                 while ((line = in.readLine()) != null) {
-                    response.append(line);
+
+                    if (line.contains("\"response\":\"")) {
+                        int start = line.indexOf("\"response\":\"") + 12;
+                        int end = line.indexOf("\"", start);
+                        if (end > start) {
+                            String chunk = line.substring(start, end).replace("\\n", "\n");
+                            botResponse.append(chunk);
+                        }
+                    }
                 }
             }
-            // Simple extraction of the "response" field
-            String resp = response.toString();
-            int idx = resp.lastIndexOf("\"response\":\"");
-            if (idx != -1) {
-                int start = idx + 12;
-                int end = resp.indexOf("\"", start);
-                if (end > start) {
-                    return resp.substring(start, end).replace("\\n", "\n");
-                }
-            }
-            return "[Bot error: Unexpected Ollama response]";
+
+            return botResponse.length() > 0 ? botResponse.toString()
+                    : "[Bot error: Empty response]";
         } catch (Exception e) {
             return "[Bot error: " + e.getMessage() + "]";
         }
