@@ -1,6 +1,7 @@
 import java.io.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.locks.*;
 
@@ -11,13 +12,42 @@ public class User implements Serializable{
     private final String username;
     private final String passwordHash;
     private final String salt;
-    
+    private String authToken;
+    private Instant tokenExpiry;
+
+
     public User(String username, String passwordHash, String salt) {
         this.username = username;
         this.passwordHash = passwordHash;
         this.salt = salt;
     }
-    
+
+    public String getAuthToken() {
+        return authToken;
+    }
+
+    public void setAuthToken(String authToken) {
+        this.authToken = authToken;
+    }
+
+    public Instant getTokenExpiry() {
+        return tokenExpiry;
+    }
+
+    public void setTokenExpiry(Instant tokenExpiry) {
+        this.tokenExpiry = tokenExpiry;
+    }
+
+    public boolean isTokenValid(String token) {
+        return this.authToken != null &&
+                this.authToken.equals(token) &&
+                Instant.now().isBefore(this.tokenExpiry);
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
     public boolean verifyPassword(String password) {
         String attemptHash = hashPassword(password, this.salt);
         return this.passwordHash.equals(attemptHash);
@@ -55,38 +85,28 @@ public class User implements Serializable{
             usersLock.readLock().unlock();
         }
     }
-    
-    private static String generateSalt() {
-        byte[] salt = new byte[16];
-        new Random().nextBytes(salt);
-        return bytesToHex(salt);
-    }
-    
-    private static String hashPassword(String password, String salt) {
+
+    public static User getUser(String username) {
+        usersLock.readLock().lock();
         try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            md.update(hexToBytes(salt));
-            byte[] hashedPassword = md.digest(password.getBytes());
-            return bytesToHex(hashedPassword);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Hashing algorithm not available", e);
+            return users.get(username);
+        } finally {
+            usersLock.readLock().unlock();
         }
     }
-    
-    private static String bytesToHex(byte[] bytes) {
-        StringBuilder sb = new StringBuilder();
-        for (byte b : bytes) {
-            sb.append(String.format("%02x", b));
+
+    public static User getUserByToken(String token) {
+        usersLock.readLock().lock();
+        try {
+            for (User user : users.values()) {
+                if (user.isTokenValid(token)) {
+                    return user;
+                }
+            }
+            return null;
+        } finally {
+            usersLock.readLock().unlock();
         }
-        return sb.toString();
-    }
-    
-    private static byte[] hexToBytes(String hex) {
-        byte[] bytes = new byte[hex.length() / 2];
-        for (int i = 0; i < bytes.length; i++) {
-            bytes[i] = (byte) Integer.parseInt(hex.substring(2 * i, 2 * i + 2), 16);
-        }
-        return bytes;
     }
     
     public static void loadUserData() {
@@ -107,11 +127,45 @@ public class User implements Serializable{
         }
     }
     
-    private static void saveUserData() {
+    public static void saveUserData() {
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(USER_DATA_FILE))) {
             oos.writeObject(users);
         } catch (IOException e) {
             System.err.println("Error saving user data: " + e.getMessage());
         }
+    }
+
+    // Utils
+    private static String generateSalt() {
+        byte[] salt = new byte[16];
+        new Random().nextBytes(salt);
+        return bytesToHex(salt);
+    }
+
+    private static String hashPassword(String password, String salt) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            md.update(hexToBytes(salt));
+            byte[] hashedPassword = md.digest(password.getBytes());
+            return bytesToHex(hashedPassword);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Hashing algorithm not available", e);
+        }
+    }
+
+    private static String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
+    }
+
+    private static byte[] hexToBytes(String hex) {
+        byte[] bytes = new byte[hex.length() / 2];
+        for (int i = 0; i < bytes.length; i++) {
+            bytes[i] = (byte) Integer.parseInt(hex.substring(2 * i, 2 * i + 2), 16);
+        }
+        return bytes;
     }
 }
