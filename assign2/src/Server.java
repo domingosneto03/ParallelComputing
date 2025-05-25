@@ -54,7 +54,7 @@ public class Server {
              PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)) {
             
             out.println("Welcome to the chat server!");
-            out.println("Commands: REGISTER, RECONNECT, LOGIN, QUIT");
+            out.println("Commands: REGISTER, LOGIN, QUIT");
             
             boolean authenticated = false;
             String username = null;
@@ -93,6 +93,7 @@ public class Server {
                         if (user != null && user.isTokenValid(token)) {
                             username = user.getUsername();
                             out.println("SUCCESS Reconnected as " + username);
+                            out.println("AUTHENTICATED Welcome, " + username + "!");
                             authenticated = true;
                         } else {
                             out.println("ERROR Invalid or expired token");
