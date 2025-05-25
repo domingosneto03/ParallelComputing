@@ -127,7 +127,7 @@ public class User implements Serializable{
         }
     }
     
-    private static void saveUserData() {
+    public static void saveUserData() {
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(USER_DATA_FILE))) {
             oos.writeObject(users);
         } catch (IOException e) {

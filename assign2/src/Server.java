@@ -58,114 +58,139 @@ public class Server {
             
             boolean authenticated = false;
             String username = null;
-            
-            while (!authenticated) {
-                String input = in.readLine();
-                if (input == null || input.equalsIgnoreCase("QUIT")) {
-                    break;
-                }
-                
-                String[] parts = input.split("\\s+", 3);
-                String command = parts[0].toUpperCase();
-                
-                switch (command) {
-                    case "REGISTER":
-                        if (parts.length < 3) {
-                            out.println("ERROR Usage: REGISTER <username> <password>");
+
+            while(true) {
+
+                while (!authenticated) {
+                    String input = in.readLine();
+                    if (input == null || input.equalsIgnoreCase("QUIT")) {
+                        break;
+                    }
+
+                    String[] parts = input.split("\\s+", 3);
+                    String command = parts[0].toUpperCase();
+
+                    switch (command) {
+                        case "REGISTER":
+                            if (parts.length < 3) {
+                                out.println("ERROR Usage: REGISTER <username> <password>");
+                                break;
+                            }
+                            username = parts[1];
+                            String password = parts[2];
+                            if (User.register(username, password)) {
+                                out.println("SUCCESS User registered");
+                            } else {
+                                out.println("ERROR Username already exists");
+                            }
                             break;
-                        }
-                        username = parts[1];
-                        String password = parts[2];
-                        if (User.register(username, password)) {
-                            out.println("SUCCESS User registered");
-                        } else {
-                            out.println("ERROR Username already exists");
-                        }
-                        break;
 
-                    case "RECONNECT":
-                        if (parts.length < 2) {
-                            out.println("ERROR Usage: RECONNECT <token>");
+                        case "RECONNECT":
+                            if (parts.length < 2) {
+                                out.println("ERROR Usage: RECONNECT <token>");
+                                break;
+                            }
+                            String token = parts[1];
+                            User user = User.getUserByToken(token);
+                            if (user != null && user.isTokenValid(token)) {
+                                username = user.getUsername();
+                                out.println("SUCCESS Reconnected as " + username);
+                                authenticated = true;
+                                System.out.println("[RECONNECT] User '" + username + "' reconnected.");
+                            }
                             break;
-                        }
-                        String token = parts[1];
-                        User user = User.getUserByToken(token);
-                        if (user != null && user.isTokenValid(token)) {
-                            username = user.getUsername();
-                            out.println("SUCCESS Reconnected as " + username);
-                            authenticated = true;
-                        }
-                        break;
-                        
-                    case "LOGIN":
-                        if (parts.length < 3) {
-                            out.println("ERROR Usage: LOGIN <username> <password>");
+
+                        case "LOGIN":
+                            if (parts.length < 3) {
+                                out.println("ERROR Usage: LOGIN <username> <password>");
+                                break;
+                            }
+                            username = parts[1];
+                            password = parts[2];
+                            if (User.authenticate(username, password)) {
+                                user = User.getUser(username);
+                                if (user.getAuthToken() != null && user.isTokenValid(user.getAuthToken())) {
+                                    token = user.getAuthToken(); // Reuse existing token
+                                } else {
+                                    token = UUID.randomUUID().toString(); // Generate new one
+                                    user.setAuthToken(token);
+                                    user.setTokenExpiry(Instant.now().plus(Duration.ofMinutes(30)));
+                                }
+                                out.println("SUCCESS Authentication successful");
+                                out.println("TOKEN " + token);
+                                authenticated = true;
+                                System.out.println("[LOGIN] User '" + username + "' logged in.");
+
+                            } else {
+                                out.println("ERROR Invalid credentials");
+                            }
                             break;
-                        }
-                        username = parts[1];
-                        password = parts[2];
-                        if (User.authenticate(username, password)) {
-                            token = UUID.randomUUID().toString();
-                            user = User.getUser(username);
-                            user.setAuthToken(token);
-                            user.setTokenExpiry(Instant.now().plus(Duration.ofMinutes(30)));
-                            out.println("SUCCESS Authentication successful");
-                            out.println("TOKEN " + token);
-                            authenticated = true;
-                        } else {
-                            out.println("ERROR Invalid credentials");
-                        }
-                        break;
-                        
-                    default:
-                        out.println("ERROR Unknown command");
-                        break;
-                }
-            }
-            
-            if (authenticated) {
-                out.println("AUTHENTICATED Welcome, " + username + "!");
-                
-                Room currentRoom = null;
-                out.println("Available rooms: " + getRoomNames());
-                out.println("Use: CREATE <room>, CREATE_AI <room> or JOIN <room> to enter a room.");
 
-                String input;
-                while ((input = in.readLine()) != null) {
-                    if (input.toUpperCase().startsWith("CREATE ")) {
-                        String roomName = input.substring(7).trim();
-                        currentRoom = getOrCreateRoom(roomName);
-                        currentRoom.addClient(out);
-                        out.println("Created and joined room: " + roomName);
-
-                    } else if (input.toUpperCase().startsWith("CREATE_AI ")) {
-                        String roomName = input.substring(10).trim();
-                        currentRoom = new AIRoom(roomName, new OllamaClient("localhost", 11434));
-                        currentRoom.addClient(out);
-                        roomsLock.lock();
-                        try {
-                            rooms.put(roomName, currentRoom);
-                        } finally {
-                            roomsLock.unlock();
-                        }
-                        out.println("Created and joined AI room: " + roomName);
-
-                    } else if (input.toUpperCase().startsWith("JOIN ")) {
-                        String roomName = input.substring(5).trim();
-                        currentRoom = getOrCreateRoom(roomName);
-                        currentRoom.addClient(out);
-                        out.println("Joined room: " + roomName);
-                    } else if (currentRoom != null) {
-                        var message = input;
-                        if (input.startsWith("^[")) {
-                            message = input.substring(2);
-                        }
-                        currentRoom.broadcast(username + ": " + message);
-                    } else {
-                        out.println("ERROR Unknown command. Use CREATE, CREATE_AI or JOIN first.");
+                        default:
+                            out.println("ERROR Unknown command");
+                            break;
                     }
                 }
 
+                if (authenticated) {
+                    out.println("AUTHENTICATED Welcome, " + username + "!");
+
+                    Room currentRoom = null;
+                    out.println("Available rooms: " + getRoomNames());
+                    out.println("Use: CREATE <room>, CREATE_AI <room> or JOIN <room> to enter a room.");
+
+                    String input;
+                    while ((input = in.readLine()) != null) {
+                        if (input.toUpperCase().startsWith("CREATE ")) {
+                            String roomName = input.substring(7).trim();
+                            currentRoom = getOrCreateRoom(roomName);
+                            currentRoom.addClient(out);
+                            out.println("Created and joined room: " + roomName);
+
+                        } else if (input.toUpperCase().startsWith("CREATE_AI ")) {
+                            String roomName = input.substring(10).trim();
+                            currentRoom = new AIRoom(roomName, new OllamaClient("localhost", 11434));
+                            currentRoom.addClient(out);
+                            roomsLock.lock();
+                            try {
+                                rooms.put(roomName, currentRoom);
+                            } finally {
+                                roomsLock.unlock();
+                            }
+                            out.println("Created and joined AI room: " + roomName);
+
+                        } else if (input.toUpperCase().startsWith("JOIN ")) {
+                            String roomName = input.substring(5).trim();
+                            currentRoom = getOrCreateRoom(roomName);
+                            currentRoom.addClient(out);
+                            out.println("Joined room: " + roomName);
+                        } else if (input.equalsIgnoreCase("LOGOUT")) {
+                            User userToLogout = User.getUser(username);
+                            if (userToLogout != null) {
+                                userToLogout.setAuthToken(null);
+                                userToLogout.setTokenExpiry(null);
+                                User.saveUserData();
+                                out.println("SUCCESS Logged out");
+                                System.out.println("[LOGOUT] User '" + username + "' logged out.");
+                            }
+                            username = null;
+                            authenticated = false;
+                            currentRoom = null;
+                            out.println("You have been logged out.");
+                            out.println("Commands: REGISTER, LOGIN, RECONNECT, QUIT");
+                            break; // break inner loop to fall back to login
+                        } else if (currentRoom != null) {
+                            var message = input;
+                            if (input.startsWith("^[")) {
+                                message = input.substring(2);
+                            }
+                            currentRoom.broadcast(username + ": " + message);
+                        } else {
+                            out.println("ERROR Unknown command. Use CREATE, CREATE_AI or JOIN first.");
+                        }
+                    }
+
+                }
             }
             
         } catch (IOException e) {

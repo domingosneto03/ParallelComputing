@@ -5,12 +5,12 @@ import java.net.*;
 
 public class Client {
     private static String authToken = null;
-    private static String tokenFile = "token_default.txt";
+    private static String tokenFile = ".tokens/token_default.txt";
 
     public static void main(String[] args) {
 
         if (args.length > 0 && !args[0].isBlank()) {
-            tokenFile = "token_" + args[0] + ".txt";
+            tokenFile = ".tokens/token_" + args[0] + ".txt";
         }
 
         try (BufferedReader tokenReader = new BufferedReader(new FileReader(tokenFile))) {
@@ -41,8 +41,12 @@ public class Client {
                             System.out.println("[Server] " + serverMsg);
                             if (serverMsg.startsWith("TOKEN ")) {
                                 authToken = serverMsg.substring(6).trim();
-                                try (PrintWriter tokenWriter = new PrintWriter(tokenFile)) {
-                                    tokenWriter.println(authToken);
+                                try {
+                                    File tokenPath = new File(tokenFile);
+                                    tokenPath.getParentFile().mkdirs(); // Ensure .tokens/ exists
+                                    try (PrintWriter tokenWriter = new PrintWriter(tokenPath)) {
+                                        tokenWriter.println(authToken);
+                                    }
                                 } catch (IOException e) {
                                     System.out.println("⚠ Failed to save token: " + e.getMessage());
                                 }
@@ -56,6 +60,9 @@ public class Client {
                 // Loop to send user input to server
                 String userMsg;
                 while ((userMsg = userInput.readLine()) != null) {
+                    if (userMsg.equalsIgnoreCase("LOGOUT")) {
+                        new File(tokenFile).delete();
+                    }
                     out.println(userMsg);
                 }
             }
