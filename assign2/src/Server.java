@@ -144,13 +144,14 @@ public class Server {
                         if (input.toUpperCase().startsWith("CREATE ")) {
                             String roomName = input.substring(7).trim();
                             currentRoom = getOrCreateRoom(roomName);
-                            currentRoom.addClient(out);
+                            currentRoom.addClient(out, username);
                             out.println("Created and joined room: " + roomName);
 
-                        } else if (input.toUpperCase().startsWith("CREATE_AI ")) {
+                        }
+                        else if (input.toUpperCase().startsWith("CREATE_AI ")) {
                             String roomName = input.substring(10).trim();
                             currentRoom = new AIRoom(roomName, new OllamaClient("localhost", 11434));
-                            currentRoom.addClient(out);
+                            currentRoom.addClient(out, username);
                             roomsLock.lock();
                             try {
                                 rooms.put(roomName, currentRoom);
@@ -159,12 +160,23 @@ public class Server {
                             }
                             out.println("Created and joined AI room: " + roomName);
 
-                        } else if (input.toUpperCase().startsWith("JOIN ")) {
+                        }
+                        else if (input.toUpperCase().startsWith("JOIN ")) {
                             String roomName = input.substring(5).trim();
-                            currentRoom = getOrCreateRoom(roomName);
-                            currentRoom.addClient(out);
-                            out.println("Joined room: " + roomName);
-                        } else if (input.equalsIgnoreCase("LOGOUT")) {
+                            roomsLock.lock();
+                            try {
+                                if (rooms.containsKey(roomName)) {
+                                    currentRoom = rooms.get(roomName);
+                                    currentRoom.addClient(out, username);
+                                    out.println("Joined room: " + roomName);
+                                } else {
+                                    out.println("ERROR Room does not exist.");
+                                }
+                            } finally {
+                                roomsLock.unlock();
+                            }
+                        }
+                        else if (input.equalsIgnoreCase("LOGOUT")) {
                             User userToLogout = User.getUser(username);
                             if (userToLogout != null) {
                                 userToLogout.setAuthToken(null);
@@ -179,6 +191,14 @@ public class Server {
                             out.println("You have been logged out.");
                             out.println("Commands: REGISTER, LOGIN, RECONNECT, QUIT");
                             break; // break inner loop to fall back to login
+                        } else if (input.equalsIgnoreCase(".LEAVE")) {
+                            if (currentRoom != null) {
+                                currentRoom.removeClient(username);
+                                currentRoom = null;
+                                out.println("You left the room.");
+                            } else {
+                                out.println("ERROR You're not in any room.");
+                            }
                         } else if (currentRoom != null) {
                             var message = input;
                             if (input.startsWith("^[")) {
