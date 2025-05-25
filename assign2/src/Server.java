@@ -18,6 +18,8 @@ public class Server {
     private boolean isRunning;
     private static final Map<String, Room> rooms = new HashMap<>();
     private static final ReentrantLock roomsLock = new ReentrantLock();
+    private static final List<PrintWriter> allClients = new ArrayList<>();
+    private static final ReentrantLock clientsLock = new ReentrantLock();
 
     private static final String KEYSTORE_PATH = "certs/server_keystore.jks";
     private static final String KEYSTORE_PASSWORD = "cpd_g12";
@@ -52,7 +54,14 @@ public class Server {
     private void handleClient(SSLSocket clientSocket) {
         try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
              PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)) {
-            
+
+            clientsLock.lock();
+            try {
+                allClients.add(out);
+            } finally {
+                clientsLock.unlock();
+            }
+
             out.println("Welcome to the chat server!");
             out.println("Commands: REGISTER, LOGIN, QUIT");
             
@@ -144,13 +153,15 @@ public class Server {
                         if (input.toUpperCase().startsWith("CREATE ")) {
                             String roomName = input.substring(7).trim();
                             currentRoom = getOrCreateRoom(roomName);
-                            currentRoom.addClient(out);
+                            currentRoom.addClient(out, username);
                             out.println("Created and joined room: " + roomName);
+                            broadcastToAllClients("Available rooms: " + getRoomNames());
 
-                        } else if (input.toUpperCase().startsWith("CREATE_AI ")) {
+                        }
+                        else if (input.toUpperCase().startsWith("CREATE_AI ")) {
                             String roomName = input.substring(10).trim();
                             currentRoom = new AIRoom(roomName, new OllamaClient("localhost", 11434));
-                            currentRoom.addClient(out);
+                            currentRoom.addClient(out, username);
                             roomsLock.lock();
                             try {
                                 rooms.put(roomName, currentRoom);
@@ -158,13 +169,25 @@ public class Server {
                                 roomsLock.unlock();
                             }
                             out.println("Created and joined AI room: " + roomName);
+                            broadcastToAllClients("Available rooms: " + getRoomNames());
 
-                        } else if (input.toUpperCase().startsWith("JOIN ")) {
+                        }
+                        else if (input.toUpperCase().startsWith("JOIN ")) {
                             String roomName = input.substring(5).trim();
-                            currentRoom = getOrCreateRoom(roomName);
-                            currentRoom.addClient(out);
-                            out.println("Joined room: " + roomName);
-                        } else if (input.equalsIgnoreCase("LOGOUT")) {
+                            roomsLock.lock();
+                            try {
+                                if (rooms.containsKey(roomName)) {
+                                    currentRoom = rooms.get(roomName);
+                                    currentRoom.addClient(out, username);
+                                    out.println("Joined room: " + roomName);
+                                } else {
+                                    out.println("ERROR Room does not exist.");
+                                }
+                            } finally {
+                                roomsLock.unlock();
+                            }
+                        }
+                        else if (input.equalsIgnoreCase("LOGOUT")) {
                             User userToLogout = User.getUser(username);
                             if (userToLogout != null) {
                                 userToLogout.setAuthToken(null);
@@ -177,9 +200,26 @@ public class Server {
                             authenticated = false;
                             currentRoom = null;
                             out.println("You have been logged out.");
-                            out.println("Commands: REGISTER, LOGIN, RECONNECT, QUIT");
+                            out.println("Commands: REGISTER, LOGIN, QUIT");
                             break; // break inner loop to fall back to login
-                        } else if (currentRoom != null) {
+                        } else if (input.equalsIgnoreCase(".LEAVE")) {
+                            if (currentRoom != null) {
+                                currentRoom.removeClient(username);
+                                currentRoom = null;
+                                out.println("You left the room.");
+                            } else {
+                                out.println("ERROR You're not in any room.");
+                            }
+                        }
+                        else if (input.equalsIgnoreCase(".LIST_USERS")) {
+                            if (currentRoom != null) {
+                                currentRoom.listUsers(out);
+                            } else {
+                                out.println("You're not in a room.");
+                            }
+                        }
+
+                        else if (currentRoom != null) {
                             var message = input;
                             if (input.startsWith("^[")) {
                                 message = input.substring(2);
@@ -222,6 +262,17 @@ public class Server {
             return rooms.computeIfAbsent(name, Room::new);
         } finally {
             roomsLock.unlock();
+        }
+    }
+
+    private static void broadcastToAllClients(String message) {
+        clientsLock.lock();
+        try {
+            for (PrintWriter client : allClients) {
+                client.println(message);
+            }
+        } finally {
+            clientsLock.unlock();
         }
     }
 
