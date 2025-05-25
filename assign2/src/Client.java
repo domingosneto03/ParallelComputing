@@ -63,6 +63,10 @@ public class Client {
                 // Loop to send user input to server
                 String userMsg;
                 while ((userMsg = userInput.readLine()) != null) {
+                    if (userMsg.length() == 1 && userMsg.charAt(0) == 27) { // ESC key
+                        userMsg = ".LEAVE";
+                        System.out.println("[Local] You pressed ESC. Leaving the room...");
+                    }
                     if (userMsg.equalsIgnoreCase("LOGOUT")) {
                         new File(tokenFile).delete();
                     }

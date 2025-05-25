@@ -24,10 +24,7 @@ public class Room {
         try {
             clients.add(out);
             clientNames.put(out, username);
-            broadcast(username + " has entered the room.");
-            if (clients.size() == 1) {
-                out.println("You are the only one in this room.");
-            }
+            broadcast("[" + username + " has entered the room.]");
         } finally {
             lock.unlock();
         }
@@ -46,10 +43,10 @@ public class Room {
             if (toRemove != null) {
                 clients.remove(toRemove);
                 clientNames.remove(toRemove);
-                broadcast(username + " has left the room.");
+                broadcast("[" + username + " has left the room.]");
             }
             if (clients.size() == 1) {
-                clients.get(0).println("You are now alone in this room.");
+                clients.get(0).println("[You are now alone in this room.]");
             }
         } finally {
             lock.unlock();
