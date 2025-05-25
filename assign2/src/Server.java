@@ -210,7 +210,16 @@ public class Server {
                             } else {
                                 out.println("ERROR You're not in any room.");
                             }
-                        } else if (currentRoom != null) {
+                        }
+                        else if (input.equalsIgnoreCase(".LIST_USERS")) {
+                            if (currentRoom != null) {
+                                currentRoom.listUsers(out);
+                            } else {
+                                out.println("You're not in a room.");
+                            }
+                        }
+
+                        else if (currentRoom != null) {
                             var message = input;
                             if (input.startsWith("^[")) {
                                 message = input.substring(2);

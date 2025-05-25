@@ -55,8 +55,17 @@ public class Room {
             lock.unlock();
         }
     }
-
-
+    public void listUsers(PrintWriter out) {
+        lock.lock();
+        try {
+            out.println("[Users in room '" + name + "']:");
+            for (String user : clientNames.values()) {
+                out.println("- " + user);
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
 
     public void broadcast(String message) {
         lock.lock();
