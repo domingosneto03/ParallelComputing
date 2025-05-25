@@ -5,15 +5,16 @@ import java.net.*;
 
 public class Client {
     private static String authToken = null;
+    private static String tokenFile = "token_default.txt";
 
     public static void main(String[] args) {
 
-        // Try to load token from file
-        try (BufferedReader tokenReader = new BufferedReader(new FileReader("token.txt"))) {
+        if (args.length > 0 && !args[0].isBlank()) {
+            tokenFile = "token_" + args[0] + ".txt";
+        }
+
+        try (BufferedReader tokenReader = new BufferedReader(new FileReader(tokenFile))) {
             authToken = tokenReader.readLine();
-            if (authToken != null && !authToken.isBlank()) {
-                System.out.println("Found saved token, will try to reconnect...");
-            }
         } catch (IOException ignored) {}
 
         System.setProperty("javax.net.ssl.trustStore", "certs/server_keystore.jks");
@@ -40,7 +41,7 @@ public class Client {
                             System.out.println("[Server] " + serverMsg);
                             if (serverMsg.startsWith("TOKEN ")) {
                                 authToken = serverMsg.substring(6).trim();
-                                try (PrintWriter tokenWriter = new PrintWriter("token.txt")) {
+                                try (PrintWriter tokenWriter = new PrintWriter(tokenFile)) {
                                     tokenWriter.println(authToken);
                                 } catch (IOException e) {
                                     System.out.println("⚠ Failed to save token: " + e.getMessage());

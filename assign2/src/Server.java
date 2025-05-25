@@ -93,10 +93,7 @@ public class Server {
                         if (user != null && user.isTokenValid(token)) {
                             username = user.getUsername();
                             out.println("SUCCESS Reconnected as " + username);
-                            out.println("AUTHENTICATED Welcome, " + username + "!");
                             authenticated = true;
-                        } else {
-                            out.println("ERROR Invalid or expired token");
                         }
                         break;
                         
