@@ -38,7 +38,10 @@ public class Client {
                     try {
                         String serverMsg;
                         while ((serverMsg = in.readLine()) != null) {
-                            System.out.println("[Server] " + serverMsg);
+                            if (!serverMsg.startsWith("TOKEN ")) {
+                                System.out.println("[Server] " + serverMsg);
+                            }
+
                             if (serverMsg.startsWith("TOKEN ")) {
                                 authToken = serverMsg.substring(6).trim();
                                 try {
