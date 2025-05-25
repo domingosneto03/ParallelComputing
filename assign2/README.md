@@ -7,17 +7,20 @@ This is a secure multi-client chat server with user registration, authentication
 ## Requirements
 
 - Java 21 or higher
-- SSL/TLS keystore: configured at `certs/server_keystore.jks`
+- Ollama with gemma3 model
 
 ---
 
 ## How to Run
 
-### Option 1: Using the Terminal
-
 1. Compile the project:
    ```bash
    javac Server.java Client.java Room.java User.java OllamaClient.java AIRoom.java
+   ```
+   For the AI rooms to work, you must also get the gemma3 model and start it:
+   ```bash
+   ollama pull gemma3
+   ollama serve
    ```
 
 2. Start the server:
@@ -31,27 +34,7 @@ This is a secure multi-client chat server with user registration, authentication
    ```
 
 To simulate multiple clients:
-- Option A: run `Client` from different directories
-- Option B: run `Client` with a unique argument per instance:
-   ```bash
-   java Client client1
-   java Client client2
-   ```
-
----
-
-### Option 2: Using IntelliJ
-
-1. Import the project into IntelliJ.
-
-2. Create Run/Debug Configurations:
-   - One for `Server`
-   - One or more for `Client`
-
-3. For multiple clients in the same directory, set different Program arguments:
-   - `client1`
-   - `client2`
-   - etc.
+- run `Client` from different directories (duplicate without the tokens)
 
 
 ---
