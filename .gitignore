@@ -15,3 +15,5 @@ Thumbs.db
 # === Runtime-generated files ===
 users.dat
 *.log
+
+~$*.xlsx
